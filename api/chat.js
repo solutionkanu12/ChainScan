@@ -1,5 +1,5 @@
 module.exports = async function handler(req, res) {
-  // CORS & Method Headers
+  // CORS Headers
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -9,24 +9,17 @@ module.exports = async function handler(req, res) {
 
   try {
     const { messages } = req.body;
-    
-    // Convert the last message from the frontend to the Gemini format
     const userMessage = messages[messages.length - 1].content;
-
     const apiKey = process.env.GEMINI_API_KEY;
-    const model = "gemini-1.5-flash"; // You can also use "gemini-1.5-pro"
 
+    // Call Google Gemini API
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
       {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          contents: [{
-            parts: [{ text: userMessage }]
-          }]
+          contents: [{ parts: [{ text: userMessage }] }]
         })
       }
     );
@@ -37,11 +30,11 @@ module.exports = async function handler(req, res) {
       return res.status(response.status).json({ error: data });
     }
 
-    // Standardize response format so your frontend doesn't break
     const botResponse = data.candidates[0].content.parts[0].text;
-    
+
+    // IMPORTANT: Returning with 'type: text' so your index.html understands it
     return res.status(200).json({
-      content: [{ text: botResponse }]
+      content: [{ type: 'text', text: botResponse }]
     });
 
   } catch (err) {
